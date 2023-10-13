@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FootballLeagueApi.Data;
 using FootballLeagueApi.Models.Entities;
+using FootballLeagueApi.Models.ApiModels;
 
 namespace FootballLeagueApi.Controllers
 {
@@ -51,16 +52,18 @@ namespace FootballLeagueApi.Controllers
         }
 
         // PUT: api/Teams/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTeam(int id, Team team)
+        public async Task<IActionResult> PutTeam(int id, TeamDTO updatedTeam)
         {
-            if (id != team.Id)
+            if(!_context.Teams.Any(t=>t.Id == id))
             {
                 return BadRequest();
             }
 
-            _context.Entry(team).State = EntityState.Modified;
+            var team = await _context.Teams.FirstOrDefaultAsync(t=>t.Id == id);
+
+            team.Name = updatedTeam.Name;
+            team.TotalPoint = updatedTeam.TotalPoint;
 
             try
             {
@@ -82,18 +85,19 @@ namespace FootballLeagueApi.Controllers
         }
 
         // POST: api/Teams
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Team>> PostTeam(Team team)
+        public async Task<ActionResult<Team>> PostTeam(TeamDTO team)
         {
-          if (_context.Teams == null)
-          {
-              return Problem("Entity set 'FootballLeagueDbContext.Teams'  is null.");
-          }
-            _context.Teams.Add(team);
+            Team newTeam = new Team()
+            {
+                Name = team.Name,
+                TotalPoint = team.TotalPoint
+            };
+
+            _context.Teams.Add(newTeam);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetTeam", new { id = team.Id }, team);
+            return Ok(newTeam);
         }
 
         // DELETE: api/Teams/5
@@ -113,7 +117,7 @@ namespace FootballLeagueApi.Controllers
             _context.Teams.Remove(team);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok();
         }
 
         private bool TeamExists(int id)

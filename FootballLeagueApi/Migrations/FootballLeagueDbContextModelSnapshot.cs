@@ -29,22 +29,24 @@ namespace FootballLeagueApi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
+                    b.Property<int>("GuestTeamId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HomeTeamId")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsPlayed")
                         .HasColumnType("bit");
-
-                    b.Property<string>("Team1")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Team2")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Winner")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("GuestTeamId");
+
+                    b.HasIndex("HomeTeamId");
 
                     b.ToTable("Matches");
                 });
@@ -67,6 +69,32 @@ namespace FootballLeagueApi.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Teams");
+                });
+
+            modelBuilder.Entity("FootballLeagueApi.Models.Entities.Match", b =>
+                {
+                    b.HasOne("FootballLeagueApi.Models.Entities.Team", "GuestTeam")
+                        .WithMany("GuestMatches")
+                        .HasForeignKey("GuestTeamId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("FootballLeagueApi.Models.Entities.Team", "HomeTeam")
+                        .WithMany("HomeMatches")
+                        .HasForeignKey("HomeTeamId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("GuestTeam");
+
+                    b.Navigation("HomeTeam");
+                });
+
+            modelBuilder.Entity("FootballLeagueApi.Models.Entities.Team", b =>
+                {
+                    b.Navigation("GuestMatches");
+
+                    b.Navigation("HomeMatches");
                 });
 #pragma warning restore 612, 618
         }

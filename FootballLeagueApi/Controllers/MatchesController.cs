@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FootballLeagueApi.Data;
 using FootballLeagueApi.Models.Entities;
+using FootballLeagueApi.Models.ApiModels;
+using FootballLeagueApi.Models;
 
 namespace FootballLeagueApi.Controllers
 {
@@ -29,7 +31,7 @@ namespace FootballLeagueApi.Controllers
           {
               return NotFound();
           }
-            return await _context.Matches.ToListAsync();
+            return await _context.Matches.Where(m=>m.IsPlayed == true).ToListAsync();
         }
 
         // GET: api/Matches/5
@@ -42,7 +44,7 @@ namespace FootballLeagueApi.Controllers
           }
             var match = await _context.Matches.FindAsync(id);
 
-            if (match == null)
+            if (match == null || match.IsPlayed == false)
             {
                 return NotFound();
             }
@@ -51,62 +53,64 @@ namespace FootballLeagueApi.Controllers
         }
 
         // PUT: api/Matches/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutMatch([FromRoute] int id, [FromBody] Match updatedMatch)
+        public async Task<IActionResult> PutMatch(int id, MatchDTO updatedMatch)
         {
-
-            var match = await _context.Matches.FindAsync(id);
-            if (match == null || match.IsPlayed == false)
+            if (!_context.Matches.Any(m => m.Id == id))
             {
-                return NotFound();
+                return BadRequest();
             }
 
-            match.Team1 = updatedMatch.Team1;
-            match.Team2 = updatedMatch.Team2;
-            match.Winner = updatedMatch.Winner;
-            match.IsPlayed = updatedMatch.IsPlayed;
+            var match = await _context.Matches.FindAsync(id);
 
+            var guestTeam = await _context.Teams
+                .FirstOrDefaultAsync(t => t.Name.ToLower() == updatedMatch.GuestTeam.ToLower());
+            var homeTeam = await _context.Teams
+                .FirstOrDefaultAsync(t => t.Name.ToLower() == updatedMatch.HomeTeam.ToLower());
+
+            guestTeam.Name = updatedMatch.GuestTeam;
+            homeTeam.Name = updatedMatch.GuestTeam;
+            
+            //points?
+
+           
             await _context.SaveChangesAsync();
             return Ok(match);
             
         }
 
         // POST: api/Matches
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Match>> PostMatch(Match match)
+        public async Task<ActionResult<Match>> PostMatch (MatchDTO match)
         {
-            _context.Matches.Add(match);
-
-            if(match.IsPlayed == true)
+            if (match.IsPlayed == true)
             {
-                var playerFirst = match.Team1; //teamPlovdiv
-                var player1 = await _context.Teams.FirstOrDefaultAsync(t => t.Name == playerFirst); //object
+                var homeTeam = await _context.Teams.FirstOrDefaultAsync(t => t.Name == match.HomeTeam);
+                var guestTeam = await _context.Teams.FirstOrDefaultAsync(t => t.Name == match.GuestTeam);
 
-                var playerSecond = match.Team2; // teamVarna
-                var player2 = await _context.Teams.FirstOrDefaultAsync(t => t.Name == playerSecond); // object
-
-                if(match.Winner == string.Empty)
+                if (match.Winner == string.Empty || match.Winner.ToLower() == "draw")
                 {
-                    player1.TotalPoint++;
-                    player2.TotalPoint++;
+                    homeTeam.TotalPoint++;                    
+                    guestTeam.TotalPoint++;
                 }
+
+                else if(match.Winner.ToLower() == homeTeam.Name.ToLower())
+                {
+                    homeTeam.TotalPoint += 3;
+                }
+
                 else
                 {
-                    if (match.Winner == playerFirst)
-                    {
-                        player1.TotalPoint += 3;
-                    }
-                    else if (match.Winner == playerSecond)
-                    {
-                        player2.TotalPoint += 3;
-                    }
-                }                
+                    guestTeam.TotalPoint += 3;
+                }
+            }
+            else
+            {
+                return BadRequest();
             }
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetMatch), new { id = match.Id }, match);
+            return Ok();
         }
 
         // DELETE: api/Matches/5
