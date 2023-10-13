@@ -1,0 +1,79 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+body{
+    width: 100%;
+    height: 100vh;
+}
+
+.container{
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: row;
+}
+
+.teams_sidebar{
+    width: 400px;
+    height: 100vh;
+    border-radius: 2px solid grey;
+}
+
+.teams_sidebar input {
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 13px;
+    padding: 10px;
+}
+
+.teams_sidebar textarea {
+    width: 100%;
+    margin-bottom: 10px;
+    font-size: 13px;
+    padding: 10px;
+    max-width: 100%;
+}
+
+.teams_sidebar button {
+    margin-bottom: 10px;
+    outline: none;
+    border: none;
+    background-color: #353535;
+    color: #FFF;
+    padding: 10px 20px;
+    border-radius: 3px;
+    curson: pointer;
+}
+
+.teams_container{
+    padding: 50px;
+    flex: 1;
+}
+
+input[type='submit'], button, [aria-label] {
+    cursor: pointer;
+}
+
+#editForm {
+    display: none;
+}
+
+table {
+    font-family: Arial, sans-serif;
+    border: 1px solid;
+    border-collapse: collapse;
+}
+
+th {
+    background-color: #f8f8f8;
+    padding: 5px;
+}
+
+td {
+    border: 1px solid;
+    padding: 5px;
+}
