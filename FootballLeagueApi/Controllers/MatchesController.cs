@@ -32,6 +32,7 @@ namespace FootballLeagueApi.Controllers
               return NotFound();
           }
             return await _context.Matches.Where(m=>m.IsPlayed == true).ToListAsync();
+            //use dto?
         }
 
         // GET: api/Matches/5
@@ -56,61 +57,106 @@ namespace FootballLeagueApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutMatch(int id, MatchDTO updatedMatch)
         {
-            if (!_context.Matches.Any(m => m.Id == id))
+            var match = await _context.Matches.FirstOrDefaultAsync(x=>x.Id == id);
+
+            if(match == null)
             {
                 return BadRequest();
             }
 
-            var match = await _context.Matches.FindAsync(id);
+            Team updateHomeTeam = null;
+            Team updateGuestTeam = null;
+            string updateWinner = null;
 
-            var guestTeam = await _context.Teams
-                .FirstOrDefaultAsync(t => t.Name.ToLower() == updatedMatch.GuestTeam.ToLower());
-            var homeTeam = await _context.Teams
-                .FirstOrDefaultAsync(t => t.Name.ToLower() == updatedMatch.HomeTeam.ToLower());
+            if (!string.IsNullOrEmpty(updatedMatch.HomeTeam))
+            {
+                var homeTeamExist = await _context.Teams.FirstOrDefaultAsync(x=>x.Name.ToLower() == updatedMatch.HomeTeam.ToLower());
+                
+                if(homeTeamExist == null)
+                {
+                    return BadRequest();
+                }
+                updateHomeTeam = homeTeamExist;
+            }
 
-            guestTeam.Name = updatedMatch.GuestTeam;
-            homeTeam.Name = updatedMatch.GuestTeam;
-            
-            //points?
+            if (!string.IsNullOrEmpty(updatedMatch.GuestTeam))
+            {
+                
+                var guestTeamExist = await _context.Teams.FirstOrDefaultAsync(x => x.Name.ToLower() == updatedMatch.GuestTeam.ToLower());
+                
+                if (guestTeamExist == null)
+                {
+                    return BadRequest();
+                }
+                updateGuestTeam = guestTeamExist;
+            }
 
+
+            if (!string.IsNullOrEmpty(updatedMatch.Winner))
+            {
+                if (updatedMatch.Winner.ToLower() != match.HomeTeam.Name.ToLower() &&
+                 updatedMatch.Winner.ToLower() != match.GuestTeam.Name.ToLower())
+                {
+                    if (updatedMatch.Winner.ToLower() != "draw")
+                    {
+                        return BadRequest();
+                    }
+                }
+                updateWinner = updatedMatch.Winner.ToLower();
+            }
+
+            match.HomeTeam = updateHomeTeam ?? match.HomeTeam;
+            match.GuestTeam = updateGuestTeam ?? match.GuestTeam;
+            try
+            {
+                match.Winner = Enum.Parse<Winner>(updateWinner);
+            }
+            catch (Exception)
+            {
+                match.Winner = match.Winner;
+            }
            
             await _context.SaveChangesAsync();
-            return Ok(match);
-            
+            return Ok(match);            
         }
 
         // POST: api/Matches
         [HttpPost]
         public async Task<ActionResult<Match>> PostMatch (MatchDTO match)
         {
-            if (match.IsPlayed == true)
-            {
-                var homeTeam = await _context.Teams.FirstOrDefaultAsync(t => t.Name == match.HomeTeam);
-                var guestTeam = await _context.Teams.FirstOrDefaultAsync(t => t.Name == match.GuestTeam);
 
-                if (match.Winner == string.Empty || match.Winner.ToLower() == "draw")
-                {
-                    homeTeam.TotalPoint++;                    
-                    guestTeam.TotalPoint++;
-                }
-
-                else if(match.Winner.ToLower() == homeTeam.Name.ToLower())
-                {
-                    homeTeam.TotalPoint += 3;
-                }
-
-                else
-                {
-                    guestTeam.TotalPoint += 3;
-                }
-            }
-            else
+            if (new string[] {match.Winner,match.HomeTeam,match.GuestTeam}.Any(x=>string.IsNullOrEmpty(x)))
             {
                 return BadRequest();
             }
-            await _context.SaveChangesAsync();
+            var homeTeam = await _context.Teams.FirstOrDefaultAsync(t => t.Name.ToLower() == match.HomeTeam.ToLower());
+            var guestTeam = await _context.Teams.FirstOrDefaultAsync(t => t.Name.ToLower() == match.GuestTeam.ToLower());
+            if (homeTeam==null || guestTeam==null)
+            {
+                return BadRequest();
+            }
+            var inputWinner = match.Winner.ToLower();
+            if(inputWinner!=homeTeam.Name.ToLower() &&
+                 inputWinner != guestTeam.Name.ToLower())              
+            {
+                if (inputWinner != "draw")
+                {
+                    return BadRequest();
+                }
+            }
 
-            return Ok();
+            var dbMatch = new Match { IsPlayed = true, HomeTeam = homeTeam, GuestTeam = guestTeam, Winner = Enum.Parse<Winner>(inputWinner) };
+            _context.Matches.Add(dbMatch);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
         }
 
         // DELETE: api/Matches/5

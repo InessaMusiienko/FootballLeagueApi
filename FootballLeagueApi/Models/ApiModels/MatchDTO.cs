@@ -14,7 +14,7 @@ namespace FootballLeagueApi.Models.ApiModels
         public string GuestTeam { get; set; } = null!;
 
         [MaxLength(TeamMaxLength, ErrorMessage = "Team name cannot be longer than 15 characters.")]
-        public string? Winner { get; set; }
+        public string Winner { get; set; } = null!;
 
         public bool IsPlayed { get; set; }
     }

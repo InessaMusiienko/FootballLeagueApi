@@ -11,8 +11,6 @@ namespace FootballLeagueApi.Models.Entities
 
         public string Name { get; set; } = null!;
 
-        public int TotalPoint { get; set; }
-
         //public ICollection<Match> HomeMatches { get; set; } = new HashSet<Match>();
         //public ICollection<Match> GuestMatches { get; set; } = new HashSet<Match>();
 

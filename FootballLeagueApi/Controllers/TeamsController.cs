@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using FootballLeagueApi.Data;
 using FootballLeagueApi.Models.Entities;
 using FootballLeagueApi.Models.ApiModels;
+using FootballLeagueApi.Services.ServiceInterfaces;
 
 namespace FootballLeagueApi.Controllers
 {
@@ -16,21 +17,23 @@ namespace FootballLeagueApi.Controllers
     public class TeamsController : ControllerBase
     {
         private readonly FootballLeagueDbContext _context;
+        private ITeamScoreCalculatingService _teamScoreCalculatingService;
 
-        public TeamsController(FootballLeagueDbContext context)
+        public TeamsController(FootballLeagueDbContext context, ITeamScoreCalculatingService teamScoreCalculatingService)
         {
             _context = context;
+            _teamScoreCalculatingService = teamScoreCalculatingService;
         }
 
         // GET: api/Teams
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Team>>> GetTeams()
+        public async Task<ActionResult<IEnumerable<TeamDTO>>> GetTeams()
         {
-          if (_context.Teams == null)
-          {
-              return NotFound();
-          }
-            return await _context.Teams.OrderByDescending(t=>t.TotalPoint).ThenByDescending(t=>t.Name).ToListAsync();
+            var allTeamsInfo = _context.Teams.Include(x => x.HomeMatches).Include(x => x.GuestMatches).ToList()
+                  .Select(x => new TeamDTO { Name = x.Name, TotalPoint = _teamScoreCalculatingService.CalculateScore(x.HomeMatches, x.GuestMatches) })
+                  .OrderByDescending(x=>x.TotalPoint).ToList();
+
+            return allTeamsInfo;
         }
 
         // GET: api/Teams/5
@@ -41,12 +44,16 @@ namespace FootballLeagueApi.Controllers
           {
               return NotFound();
           }
-            var team = await _context.Teams.FindAsync(id);
+            var team = await _context.Teams.Include(x => x.HomeMatches)
+                .Include(x => x.GuestMatches).FirstOrDefaultAsync(x => x.Id == id);
 
             if (team == null)
             {
                 return NotFound();
             }
+
+            var teamToReturn 
+                = new TeamDTO { Name = team.Name, TotalPoint=_teamScoreCalculatingService.CalculateScore(team.HomeMatches,team.GuestMatches) };
 
             return team;
         }
@@ -63,7 +70,7 @@ namespace FootballLeagueApi.Controllers
             var team = await _context.Teams.FirstOrDefaultAsync(t=>t.Id == id);
 
             team.Name = updatedTeam.Name;
-            team.TotalPoint = updatedTeam.TotalPoint;
+            
 
             try
             {
@@ -90,8 +97,7 @@ namespace FootballLeagueApi.Controllers
         {
             Team newTeam = new Team()
             {
-                Name = team.Name,
-                TotalPoint = team.TotalPoint
+                Name = team.Name
             };
 
             _context.Teams.Add(newTeam);

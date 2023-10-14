@@ -2,8 +2,8 @@
 {
     public enum Winner
     {
-        HomeTeam,
-        GuestTeam,
-        Draw
+        hometeam,
+        guestteam,
+        draw
     }
 }

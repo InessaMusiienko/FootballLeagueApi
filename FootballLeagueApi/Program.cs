@@ -1,4 +1,6 @@
 using FootballLeagueApi.Data;
+using FootballLeagueApi.Services;
+using FootballLeagueApi.Services.ServiceInterfaces;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,8 @@ builder.Services.AddDbContext<FootballLeagueDbContext>(opt =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<ITeamScoreCalculatingService, TeamScoreCalculatingService>();
 
 var app = builder.Build();
 
