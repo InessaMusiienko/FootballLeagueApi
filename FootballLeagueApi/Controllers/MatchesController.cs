@@ -57,7 +57,7 @@ namespace FootballLeagueApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutMatch(int id, MatchDTO updatedMatch)
         {
-            var match = await _context.Matches.FirstOrDefaultAsync(x=>x.Id == id);
+            var match = await _context.Matches.Include(x=>x.HomeTeam).Include(x=>x.GuestTeam).FirstOrDefaultAsync(x=>x.Id == id);
 
             if(match == null)
             {
@@ -66,7 +66,6 @@ namespace FootballLeagueApi.Controllers
 
             Team updateHomeTeam = null;
             Team updateGuestTeam = null;
-            string updateWinner = null;
 
             if (!string.IsNullOrEmpty(updatedMatch.HomeTeam))
             {
@@ -92,24 +91,16 @@ namespace FootballLeagueApi.Controllers
             }
 
 
-            if (!string.IsNullOrEmpty(updatedMatch.Winner))
+            if (string.IsNullOrEmpty(updatedMatch.Winner))
             {
-                if (updatedMatch.Winner.ToLower() != match.HomeTeam.Name.ToLower() &&
-                 updatedMatch.Winner.ToLower() != match.GuestTeam.Name.ToLower())
-                {
-                    if (updatedMatch.Winner.ToLower() != "draw")
-                    {
-                        return BadRequest();
-                    }
-                }
-                updateWinner = updatedMatch.Winner.ToLower();
+                return BadRequest();
             }
 
             match.HomeTeam = updateHomeTeam ?? match.HomeTeam;
             match.GuestTeam = updateGuestTeam ?? match.GuestTeam;
             try
             {
-                match.Winner = Enum.Parse<Winner>(updateWinner);
+                match.Winner = Enum.Parse<Winner>(updatedMatch.Winner.ToLower());
             }
             catch (Exception)
             {
@@ -117,7 +108,7 @@ namespace FootballLeagueApi.Controllers
             }
            
             await _context.SaveChangesAsync();
-            return Ok(match);            
+            return Ok();            
         }
 
         // POST: api/Matches
